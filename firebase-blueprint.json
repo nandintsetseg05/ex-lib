@@ -1,0 +1,98 @@
+{
+  "entities": {
+    "Book": {
+      "title": "Book",
+      "description": "A book documented in a reader's personal catalog with genre, rating, reading summary, and optional cover image.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the user who owns this book record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the book.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "author": {
+          "type": "string",
+          "description": "Author of the book.",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "genre": {
+          "type": "string",
+          "description": "Literary genre category.",
+          "enum": [
+            "Fiction",
+            "Non-Fiction",
+            "Philosophy",
+            "Science & Nature",
+            "Sci-Fi & Fantasy",
+            "Biography & History",
+            "Design & Art",
+            "Psychology",
+            "Poetry",
+            "Other"
+          ]
+        },
+        "rating": {
+          "type": "integer",
+          "description": "Reader rating from 1 to 5 stars."
+        },
+        "summary": {
+          "type": "string",
+          "description": "Short personal summary of what the reader understood from the book.",
+          "maxLength": 5000
+        },
+        "keyTakeaway": {
+          "type": "string",
+          "description": "Optional single-sentence distillation or favorite quote.",
+          "maxLength": 500
+        },
+        "dateFinished": {
+          "type": "string",
+          "description": "Optional date or month/year when the book was finished (YYYY-MM-DD or YYYY-MM).",
+          "maxLength": 32
+        },
+        "coverImage": {
+          "type": "string",
+          "description": "Optional compressed cover image data URI or asset path.",
+          "maxLength": 350000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the record was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the record was last updated."
+        }
+      },
+      "required": [
+        "ownerId",
+        "title",
+        "author",
+        "genre",
+        "rating",
+        "summary",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/books/{bookId}": {
+      "schema": {
+        "$ref": "#/entities/Book"
+      },
+      "description": "Personal library of documented books scoped by ownerId."
+    }
+  }
+}

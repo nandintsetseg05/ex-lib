@@ -1,0 +1,6 @@
+{
+  "name": "Ex Libris — Personal Reading Archive",
+  "description": "Document the books you have read, categorize by genre and rating, upload cover photography, and record concise summaries of what you understood.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

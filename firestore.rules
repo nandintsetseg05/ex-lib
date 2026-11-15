@@ -1,0 +1,152 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: deny everything by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidGenre(genre) {
+      return genre in [
+        'Fiction',
+        'Non-Fiction',
+        'Philosophy',
+        'Science & Nature',
+        'Sci-Fi & Fantasy',
+        'Biography & History',
+        'Design & Art',
+        'Psychology',
+        'Poetry',
+        'Other'
+      ];
+    }
+
+    function isValidBook(data) {
+      return data.keys().hasAll([
+          'ownerId',
+          'title',
+          'author',
+          'genre',
+          'rating',
+          'summary',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId',
+          'title',
+          'author',
+          'genre',
+          'rating',
+          'summary',
+          'keyTakeaway',
+          'dateFinished',
+          'coverImage',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.ownerId is string
+        && isValidId(data.ownerId)
+        && data.ownerId == request.auth.uid
+        && data.title is string
+        && data.title.size() >= 1
+        && data.title.size() <= 200
+        && data.author is string
+        && data.author.size() >= 1
+        && data.author.size() <= 150
+        && data.genre is string
+        && isValidGenre(data.genre)
+        && data.rating is int
+        && data.rating >= 1
+        && data.rating <= 5
+        && data.summary is string
+        && data.summary.size() <= 5000
+        && (!('keyTakeaway' in data) || (data.keyTakeaway is string && data.keyTakeaway.size() <= 500))
+        && (!('dateFinished' in data) || (data.dateFinished is string && data.dateFinished.size() <= 32))
+        && (!('coverImage' in data) || (data.coverImage is string && data.coverImage.size() <= 350000))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isUpdateBookDetailsAction() {
+      return incoming().diff(existing()).affectedKeys().hasOnly([
+        'title',
+        'author',
+        'genre',
+        'rating',
+        'summary',
+        'keyTakeaway',
+        'dateFinished',
+        'coverImage',
+        'updatedAt'
+      ]);
+    }
+
+    function isUpdateBookNotesAction() {
+      return incoming().diff(existing()).affectedKeys().hasOnly([
+        'summary',
+        'keyTakeaway',
+        'updatedAt'
+      ]);
+    }
+
+    function isUpdateBookRatingAction() {
+      return incoming().diff(existing()).affectedKeys().hasOnly([
+        'rating',
+        'updatedAt'
+      ]);
+    }
+
+    match /books/{bookId} {
+      allow get: if isSignedIn()
+        && isValidId(bookId)
+        && existing().ownerId == request.auth.uid;
+
+      allow list: if isSignedIn()
+        && resource.data.ownerId == request.auth.uid;
+
+      allow create: if isVerifiedUser()
+        && isValidId(bookId)
+        && isValidBook(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser()
+        && isValidId(bookId)
+        && isValidBook(incoming())
+        && existing().ownerId == request.auth.uid
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isUpdateBookDetailsAction()
+          || isUpdateBookNotesAction()
+          || isUpdateBookRatingAction()
+        );
+
+      allow delete: if isVerifiedUser()
+        && isValidId(bookId)
+        && existing().ownerId == request.auth.uid;
+    }
+  }
+}
